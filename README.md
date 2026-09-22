@@ -167,6 +167,12 @@ also builds the optional command-line tools so their sources cannot silently
 become stale; they remain disabled by default for normal library builds and
 release packages.
 
+Each successful CI job uploads its install tree as a downloadable GitHub
+Actions artifact, which GitHub delivers as a ZIP file. CI artifacts are retained
+for 14 days and are named for their target platform. Desktop CI artifacts
+include the optional command-line tools; the Android artifact contains the
+static library, header, models, CMake package files, README, and license.
+
 Pushing a tag whose name starts with `v` (for example, `v1.3.2`) creates a
 GitHub release with install-tree ZIPs for Linux x64, Windows x64, macOS x64,
 macOS arm64, Android arm64-v8a, and Android x86_64. Running the Release workflow
