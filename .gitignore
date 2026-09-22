@@ -1,1 +1,10 @@
 *~
+
+# CMake build trees and generated IDE files.
+/build*/
+/out/
+/CMakeUserPresets.json
+
+# Python conversion and validation caches.
+__pycache__/
+*.py[cod]

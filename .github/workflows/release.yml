@@ -1,0 +1,174 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  desktop:
+    name: Build ${{ matrix.id }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-x64
+            os: ubuntu-24.04
+          - id: macos-arm64
+            os: macos-15
+          - id: macos-x64
+            os: macos-15-intel
+          - id: windows-x64
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set package name
+        shell: bash
+        run: |
+          safe_ref="${GITHUB_REF_NAME//\//-}"
+          echo "PACKAGE_NAME=lyra-codec-${safe_ref}-${{ matrix.id }}" >> "$GITHUB_ENV"
+
+      - name: Set up OpenCV 4.14
+        id: opencv
+        uses: ./.github/actions/setup-opencv
+
+      - name: Configure
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" \
+            -DLYRA_CODEC_BUILD_TESTS=ON \
+            -DLYRA_CODEC_BUILD_TOOLS=OFF
+
+      - name: Configure
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" `
+            -DLYRA_CODEC_BUILD_TESTS=ON `
+            -DLYRA_CODEC_BUILD_TOOLS=OFF
+
+      - name: Build, test, and install
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+          cmake --install build --prefix "$GITHUB_WORKSPACE/package/$PACKAGE_NAME"
+          cd package
+          cmake -E tar cf "$PACKAGE_NAME.zip" --format=zip "$PACKAGE_NAME"
+
+      - name: Build, test, and install
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+          $env:PATH = "${{ steps.opencv.outputs.runtime-dir }};$env:PATH"
+          ctest --test-dir build -C Release --output-on-failure
+          cmake --install build --config Release `
+            --prefix "$env:GITHUB_WORKSPACE/package/$env:PACKAGE_NAME"
+          Set-Location package
+          cmake -E tar cf "$env:PACKAGE_NAME.zip" --format=zip "$env:PACKAGE_NAME"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: package/${{ env.PACKAGE_NAME }}.zip
+          if-no-files-found: error
+
+  android:
+    name: Build Android ${{ matrix.abi }}
+    strategy:
+      fail-fast: false
+      matrix:
+        abi:
+          - arm64-v8a
+          - x86_64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set package name
+        shell: bash
+        run: |
+          safe_ref="${GITHUB_REF_NAME//\//-}"
+          echo "PACKAGE_NAME=lyra-codec-${safe_ref}-android-${{ matrix.abi }}" >> "$GITHUB_ENV"
+
+      - name: Set up OpenCV 4.14 Android SDK
+        id: opencv
+        uses: ./.github/actions/setup-opencv
+        with:
+          target: android
+
+      - name: Build and install
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-21 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" \
+            -DLYRA_CODEC_BUILD_TESTS=ON \
+            -DLYRA_CODEC_BUILD_TOOLS=OFF
+          cmake --build build --parallel 2
+          cmake --install build --prefix "$GITHUB_WORKSPACE/package/$PACKAGE_NAME"
+          cd package
+          cmake -E tar cf "$PACKAGE_NAME.zip" --format=zip "$PACKAGE_NAME"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: package/${{ env.PACKAGE_NAME }}.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - desktop
+      - android
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          cd dist
+          sha256sum ./*.zip > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" ./*.zip SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --generate-notes \
+            --title "$GITHUB_REF_NAME"

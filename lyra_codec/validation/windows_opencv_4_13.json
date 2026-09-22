@@ -1,0 +1,458 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "tensorflow": "2.19.0",
+  "cases": [
+    {
+      "input": "sample1_16kHz.wav",
+      "bitrate": 3200,
+      "packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.26744186046511625,
+        "codebook_index_match_fraction": 0.7779796511627907,
+        "mismatched_indices": 611,
+        "total_indices": 2752
+      },
+      "onnxruntime_packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.26744186046511625,
+        "codebook_index_match_fraction": 0.7779796511627907,
+        "mismatched_indices": 611,
+        "total_indices": 2752
+      },
+      "decoder_runtime_difference": {
+        "samples": 55040,
+        "rmse": 0.0066449337790494825,
+        "snr_db": 25.423187746630447,
+        "correlation": 0.998570712285421,
+        "si_sdr_db": 25.429195390553453,
+        "log_spectral_distance_db": 4.0468014963634
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 55040,
+        "rmse": 0.0066449362770928475,
+        "snr_db": 25.42318448132704,
+        "correlation": 0.9985707111166181,
+        "si_sdr_db": 25.429191832500315,
+        "log_spectral_distance_db": 4.041703820967907
+      },
+      "encoder_packet_effect": {
+        "samples": 55040,
+        "rmse": 0.035090459838499996,
+        "snr_db": 10.969219704172527,
+        "correlation": 0.959290307717525,
+        "si_sdr_db": 10.620810595641817,
+        "log_spectral_distance_db": 6.497980910561771
+      },
+      "end_to_end_difference": {
+        "samples": 55040,
+        "rmse": 0.034466817848627596,
+        "snr_db": 11.124977112564025,
+        "correlation": 0.9607404610378295,
+        "si_sdr_db": 10.788312540492637,
+        "log_spectral_distance_db": 6.4497423167959935
+      },
+      "tflite_vs_input": {
+        "samples": 55040,
+        "rmse": 0.06153703670020252,
+        "snr_db": 5.827382052703722,
+        "correlation": 0.8736687037253523,
+        "si_sdr_db": 5.0848407503106365,
+        "log_spectral_distance_db": 9.823161049486389
+      },
+      "opencv_vs_input": {
+        "samples": 55040,
+        "rmse": 0.062454452806102734,
+        "snr_db": 5.698845481375181,
+        "correlation": 0.866043429469034,
+        "si_sdr_db": 4.771935575972767,
+        "log_spectral_distance_db": 9.923933312731853
+      },
+      "onnxruntime_vs_input": {
+        "samples": 55040,
+        "rmse": 0.06245446572787253,
+        "snr_db": 5.698843684272657,
+        "correlation": 0.8660433646021529,
+        "si_sdr_db": 4.771932973183628,
+        "log_spectral_distance_db": 9.924206312862543
+      }
+    },
+    {
+      "input": "sample1_16kHz.wav",
+      "bitrate": 6000,
+      "packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.029069767441860465,
+        "codebook_index_match_fraction": 0.6089147286821706,
+        "mismatched_indices": 2018,
+        "total_indices": 5160
+      },
+      "onnxruntime_packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.029069767441860465,
+        "codebook_index_match_fraction": 0.6089147286821706,
+        "mismatched_indices": 2018,
+        "total_indices": 5160
+      },
+      "decoder_runtime_difference": {
+        "samples": 55040,
+        "rmse": 0.005706692088061542,
+        "snr_db": 27.146358196777406,
+        "correlation": 0.9990663351206598,
+        "si_sdr_db": 27.28148653698371,
+        "log_spectral_distance_db": 3.939065989008188
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 55040,
+        "rmse": 0.00570667885635083,
+        "snr_db": 27.14637833616997,
+        "correlation": 0.9990663395558635,
+        "si_sdr_db": 27.281507314232538,
+        "log_spectral_distance_db": 3.9359301308730648
+      },
+      "encoder_packet_effect": {
+        "samples": 55040,
+        "rmse": 0.02961962885496386,
+        "snr_db": 12.842454755202509,
+        "correlation": 0.9736803739883364,
+        "si_sdr_db": 12.612780148786094,
+        "log_spectral_distance_db": 6.6562187408465086
+      },
+      "end_to_end_difference": {
+        "samples": 55040,
+        "rmse": 0.029120258255944602,
+        "snr_db": 12.990142557290678,
+        "correlation": 0.9746010461534296,
+        "si_sdr_db": 12.773602626528373,
+        "log_spectral_distance_db": 6.533742418604567
+      },
+      "tflite_vs_input": {
+        "samples": 55040,
+        "rmse": 0.05064011351848011,
+        "snr_db": 7.520220223158408,
+        "correlation": 0.9209363512371124,
+        "si_sdr_db": 7.469586872734178,
+        "log_spectral_distance_db": 9.594737283614258
+      },
+      "opencv_vs_input": {
+        "samples": 55040,
+        "rmse": 0.050021954603057826,
+        "snr_db": 7.62690047945232,
+        "correlation": 0.9204561955819416,
+        "si_sdr_db": 7.439830659438478,
+        "log_spectral_distance_db": 9.648752305083379
+      },
+      "onnxruntime_vs_input": {
+        "samples": 55040,
+        "rmse": 0.050021963948558956,
+        "snr_db": 7.626898856685188,
+        "correlation": 0.9204561543995634,
+        "si_sdr_db": 7.439828126341537,
+        "log_spectral_distance_db": 9.649826384549538
+      }
+    },
+    {
+      "input": "sample1_16kHz.wav",
+      "bitrate": 9200,
+      "packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.0,
+        "codebook_index_match_fraction": 0.4692871587462083,
+        "mismatched_indices": 4199,
+        "total_indices": 7912
+      },
+      "onnxruntime_packets": {
+        "frames": 172,
+        "exact_packet_fraction": 0.0,
+        "codebook_index_match_fraction": 0.4692871587462083,
+        "mismatched_indices": 4199,
+        "total_indices": 7912
+      },
+      "decoder_runtime_difference": {
+        "samples": 55040,
+        "rmse": 0.006050795189607593,
+        "snr_db": 26.495572638318304,
+        "correlation": 0.9989148064282971,
+        "si_sdr_db": 26.62755511063154,
+        "log_spectral_distance_db": 3.973383948865262
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 55040,
+        "rmse": 0.006050783964590192,
+        "snr_db": 26.495588751795903,
+        "correlation": 0.9989148095382736,
+        "si_sdr_db": 26.62756758281553,
+        "log_spectral_distance_db": 3.9725748571457267
+      },
+      "encoder_packet_effect": {
+        "samples": 55040,
+        "rmse": 0.025617425679883416,
+        "snr_db": 13.961111999147619,
+        "correlation": 0.9802616530201441,
+        "si_sdr_db": 13.906514204777043,
+        "log_spectral_distance_db": 6.302224972501739
+      },
+      "end_to_end_difference": {
+        "samples": 55040,
+        "rmse": 0.02551714584263482,
+        "snr_db": 13.995179781078683,
+        "correlation": 0.9806493445968212,
+        "si_sdr_db": 13.995247048297943,
+        "log_spectral_distance_db": 6.331428799055103
+      },
+      "tflite_vs_input": {
+        "samples": 55040,
+        "rmse": 0.04522251398008178,
+        "snr_db": 8.503019600434103,
+        "correlation": 0.9353417009215729,
+        "si_sdr_db": 8.44553186189705,
+        "log_spectral_distance_db": 9.494386810252742
+      },
+      "opencv_vs_input": {
+        "samples": 55040,
+        "rmse": 0.04413025498404843,
+        "snr_db": 8.715384898225652,
+        "correlation": 0.941104908071636,
+        "si_sdr_db": 8.891431401554005,
+        "log_spectral_distance_db": 9.656256475946192
+      },
+      "onnxruntime_vs_input": {
+        "samples": 55040,
+        "rmse": 0.044130260607996956,
+        "snr_db": 8.715383791298146,
+        "correlation": 0.9411048985313614,
+        "si_sdr_db": 8.891430625891964,
+        "log_spectral_distance_db": 9.654823962444002
+      }
+    },
+    {
+      "input": "sample2_16kHz.wav",
+      "bitrate": 3200,
+      "packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.18055555555555555,
+        "codebook_index_match_fraction": 0.7174479166666666,
+        "mismatched_indices": 651,
+        "total_indices": 2304
+      },
+      "onnxruntime_packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.18055555555555555,
+        "codebook_index_match_fraction": 0.7174479166666666,
+        "mismatched_indices": 651,
+        "total_indices": 2304
+      },
+      "decoder_runtime_difference": {
+        "samples": 46080,
+        "rmse": 0.007260568432470119,
+        "snr_db": 24.686855924525823,
+        "correlation": 0.9983036835201019,
+        "si_sdr_db": 24.68368859727141,
+        "log_spectral_distance_db": 4.013852533763821
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 46080,
+        "rmse": 0.007260560615933375,
+        "snr_db": 24.686865275530874,
+        "correlation": 0.9983036871988626,
+        "si_sdr_db": 24.68369801838191,
+        "log_spectral_distance_db": 4.012823204943162
+      },
+      "encoder_packet_effect": {
+        "samples": 46080,
+        "rmse": 0.040633602313553126,
+        "snr_db": 9.72856187088693,
+        "correlation": 0.9470940311530716,
+        "si_sdr_db": 9.39895745022414,
+        "log_spectral_distance_db": 7.053072167411329
+      },
+      "end_to_end_difference": {
+        "samples": 46080,
+        "rmse": 0.04035251564986306,
+        "snr_db": 9.788856094261725,
+        "correlation": 0.9478118177306191,
+        "si_sdr_db": 9.463238009858642,
+        "log_spectral_distance_db": 7.037068220652013
+      },
+      "tflite_vs_input": {
+        "samples": 46080,
+        "rmse": 0.06166780209296961,
+        "snr_db": 5.853001369104247,
+        "correlation": 0.874214604641849,
+        "si_sdr_db": 5.1080756356664745,
+        "log_spectral_distance_db": 8.429936186145593
+      },
+      "opencv_vs_input": {
+        "samples": 46080,
+        "rmse": 0.06101856674072863,
+        "snr_db": 5.944930722170923,
+        "correlation": 0.8777184202263305,
+        "si_sdr_db": 5.257009674689678,
+        "log_spectral_distance_db": 8.550740227916918
+      },
+      "onnxruntime_vs_input": {
+        "samples": 46080,
+        "rmse": 0.06101855990867569,
+        "snr_db": 5.944931694702142,
+        "correlation": 0.8777184312080898,
+        "si_sdr_db": 5.257010141985217,
+        "log_spectral_distance_db": 8.549916293289668
+      }
+    },
+    {
+      "input": "sample2_16kHz.wav",
+      "bitrate": 6000,
+      "packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.020833333333333332,
+        "codebook_index_match_fraction": 0.5254629629629629,
+        "mismatched_indices": 2050,
+        "total_indices": 4320
+      },
+      "onnxruntime_packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.020833333333333332,
+        "codebook_index_match_fraction": 0.5254629629629629,
+        "mismatched_indices": 2050,
+        "total_indices": 4320
+      },
+      "decoder_runtime_difference": {
+        "samples": 46080,
+        "rmse": 0.00700084230130636,
+        "snr_db": 25.310384586714555,
+        "correlation": 0.9985381213412517,
+        "si_sdr_db": 25.331301399671197,
+        "log_spectral_distance_db": 3.80612384489379
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 46080,
+        "rmse": 0.00700085222081619,
+        "snr_db": 25.31037227966593,
+        "correlation": 0.9985381166259286,
+        "si_sdr_db": 25.331287378549785,
+        "log_spectral_distance_db": 3.8075124294883307
+      },
+      "encoder_packet_effect": {
+        "samples": 46080,
+        "rmse": 0.030340399438372648,
+        "snr_db": 12.572964605007758,
+        "correlation": 0.9722102060105821,
+        "si_sdr_db": 12.367120834310114,
+        "log_spectral_distance_db": 6.980841868817676
+      },
+      "end_to_end_difference": {
+        "samples": 46080,
+        "rmse": 0.030510957497439182,
+        "snr_db": 12.524273748074009,
+        "correlation": 0.9718831187042702,
+        "si_sdr_db": 12.31398663330356,
+        "log_spectral_distance_db": 6.958908447882329
+      },
+      "tflite_vs_input": {
+        "samples": 46080,
+        "rmse": 0.05602995272272415,
+        "snr_db": 6.685765648340034,
+        "correlation": 0.9015045595465404,
+        "si_sdr_db": 6.374586171346194,
+        "log_spectral_distance_db": 8.26751807954546
+      },
+      "opencv_vs_input": {
+        "samples": 46080,
+        "rmse": 0.05200819640749612,
+        "snr_db": 7.332734905955144,
+        "correlation": 0.9145028592652921,
+        "si_sdr_db": 7.0838235512454055,
+        "log_spectral_distance_db": 8.278335137244497
+      },
+      "onnxruntime_vs_input": {
+        "samples": 46080,
+        "rmse": 0.052008200792201684,
+        "snr_db": 7.332734173665433,
+        "correlation": 0.9145028397285618,
+        "si_sdr_db": 7.083822423049204,
+        "log_spectral_distance_db": 8.278435095877203
+      }
+    },
+    {
+      "input": "sample2_16kHz.wav",
+      "bitrate": 9200,
+      "packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.0,
+        "codebook_index_match_fraction": 0.392512077294686,
+        "mismatched_indices": 4024,
+        "total_indices": 6624
+      },
+      "onnxruntime_packets": {
+        "frames": 144,
+        "exact_packet_fraction": 0.0,
+        "codebook_index_match_fraction": 0.392512077294686,
+        "mismatched_indices": 4024,
+        "total_indices": 6624
+      },
+      "decoder_runtime_difference": {
+        "samples": 46080,
+        "rmse": 0.007131303943163739,
+        "snr_db": 25.02319732900023,
+        "correlation": 0.9984265082959094,
+        "si_sdr_db": 25.01109995273458,
+        "log_spectral_distance_db": 3.7870048120501707
+      },
+      "onnxruntime_decoder_difference": {
+        "samples": 46080,
+        "rmse": 0.007131313122882613,
+        "snr_db": 25.02318614815948,
+        "correlation": 0.9984265042043986,
+        "si_sdr_db": 25.01108863363466,
+        "log_spectral_distance_db": 3.7858552181331864
+      },
+      "encoder_packet_effect": {
+        "samples": 46080,
+        "rmse": 0.027124241237684418,
+        "snr_db": 13.419424302013018,
+        "correlation": 0.9773783820165195,
+        "si_sdr_db": 13.29552356033868,
+        "log_spectral_distance_db": 6.743819720034437
+      },
+      "end_to_end_difference": {
+        "samples": 46080,
+        "rmse": 0.02740809214536239,
+        "snr_db": 13.329000152821003,
+        "correlation": 0.9768278783062903,
+        "si_sdr_db": 13.18738652336852,
+        "log_spectral_distance_db": 6.675047235641327
+      },
+      "tflite_vs_input": {
+        "samples": 46080,
+        "rmse": 0.05121134641750829,
+        "snr_db": 7.466846884857729,
+        "correlation": 0.9159875304528523,
+        "si_sdr_db": 7.170876774522038,
+        "log_spectral_distance_db": 8.148465463954183
+      },
+      "opencv_vs_input": {
+        "samples": 46080,
+        "rmse": 0.0494815981516925,
+        "snr_db": 7.7652964089999985,
+        "correlation": 0.9219749698230438,
+        "si_sdr_db": 7.534985335607467,
+        "log_spectral_distance_db": 8.116742584221335
+      },
+      "onnxruntime_vs_input": {
+        "samples": 46080,
+        "rmse": 0.049481594339788486,
+        "snr_db": 7.765297078133174,
+        "correlation": 0.9219749708342071,
+        "si_sdr_db": 7.5349853971652845,
+        "log_spectral_distance_db": 8.114541312075488
+      }
+    }
+  ],
+  "summary": {
+    "mean_codebook_index_match_fraction": 0.5819340825859142,
+    "mean_si_sdr_regression_db": -0.22091968867187153,
+    "worst_si_sdr_regression_db": 0.31290517433786924,
+    "allowed_si_sdr_regression_db": 2.0,
+    "quality_gate_passed": true,
+    "packet_format_cross_decode_passed": true
+  }
+}

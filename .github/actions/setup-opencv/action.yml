@@ -1,0 +1,120 @@
+name: Set up OpenCV
+description: Install a cached OpenCV 4 build for Lyra's GitHub Actions jobs
+
+inputs:
+  version:
+    description: OpenCV release to install
+    required: false
+    default: 4.14.0
+  target:
+    description: Either desktop or android
+    required: false
+    default: desktop
+
+outputs:
+  opencv-dir:
+    description: Directory containing OpenCVConfig.cmake
+    value: ${{ steps.paths.outputs.opencv-dir }}
+  runtime-dir:
+    description: Directory containing OpenCV runtime libraries, if applicable
+    value: ${{ steps.paths.outputs.runtime-dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Cache desktop OpenCV on Windows
+      if: inputs.target == 'desktop' && runner.os == 'Windows'
+      id: cache-windows
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/opencv
+        key: opencv-desktop-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}-v1
+
+    - name: Download desktop OpenCV on Windows
+      if: inputs.target == 'desktop' && runner.os == 'Windows' && steps.cache-windows.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $archive = Join-Path $env:RUNNER_TEMP "opencv-${{ inputs.version }}-windows.exe"
+        curl.exe -L --fail --retry 3 --output $archive `
+          "https://github.com/opencv/opencv/releases/download/${{ inputs.version }}/opencv-${{ inputs.version }}-windows.exe"
+        7z x $archive "-o$env:RUNNER_TEMP" -y
+
+    - name: Cache desktop OpenCV on Unix
+      if: inputs.target == 'desktop' && runner.os != 'Windows'
+      id: cache-unix
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/opencv-install
+        key: opencv-desktop-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}-static-v1
+
+    - name: Build desktop OpenCV on Unix
+      if: inputs.target == 'desktop' && runner.os != 'Windows' && steps.cache-unix.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --branch "${{ inputs.version }}" --depth 1 \
+          https://github.com/opencv/opencv.git "$RUNNER_TEMP/opencv-source"
+        cmake -S "$RUNNER_TEMP/opencv-source" -B "$RUNNER_TEMP/opencv-build" -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/opencv-install" \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DBUILD_LIST=core,dnn \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_JAVA=OFF \
+          -DBUILD_opencv_apps=OFF \
+          -DBUILD_PERF_TESTS=OFF \
+          -DBUILD_TESTS=OFF \
+          -DBUILD_opencv_python2=OFF \
+          -DBUILD_opencv_python3=OFF \
+          -DWITH_OPENCL=OFF
+        cmake --build "$RUNNER_TEMP/opencv-build" --parallel 2
+        cmake --install "$RUNNER_TEMP/opencv-build"
+
+    - name: Cache Android OpenCV SDK
+      if: inputs.target == 'android'
+      id: cache-android
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/OpenCV-android-sdk
+        key: opencv-android-${{ inputs.version }}-v1
+
+    - name: Download Android OpenCV SDK
+      if: inputs.target == 'android' && steps.cache-android.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        archive="$RUNNER_TEMP/opencv-${{ inputs.version }}-android-sdk.zip"
+        curl -L --fail --retry 3 --output "$archive" \
+          "https://github.com/opencv/opencv/releases/download/${{ inputs.version }}/opencv-${{ inputs.version }}-android-sdk.zip"
+        cmake -E tar xvf "$archive"
+      working-directory: ${{ runner.temp }}
+
+    - name: Export Windows OpenCV paths
+      if: inputs.target == 'desktop' && runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $config = Get-ChildItem "$env:RUNNER_TEMP/opencv" -Recurse `
+          -Filter OpenCVConfig.cmake |
+          Where-Object FullName -Match '[\\/]x64[\\/]vc[0-9]+[\\/]lib[\\/]OpenCVConfig.cmake$' |
+          Select-Object -First 1
+        if (-not $config) {
+          throw "The OpenCV archive did not contain an x64 Visual Studio package"
+        }
+        $libraryDirectory = $config.Directory.FullName
+        $runtimeDirectory = Join-Path $config.Directory.Parent.FullName bin
+        "OPENCV_DIR_OUTPUT=$libraryDirectory" >> $env:GITHUB_ENV
+        "OPENCV_RUNTIME_OUTPUT=$runtimeDirectory" >> $env:GITHUB_ENV
+
+    - name: Export OpenCV paths
+      id: paths
+      shell: bash
+      run: |
+        if [ "${{ inputs.target }}" = "android" ]; then
+          echo "opencv-dir=$RUNNER_TEMP/OpenCV-android-sdk/sdk/native/jni" >> "$GITHUB_OUTPUT"
+          echo "runtime-dir=" >> "$GITHUB_OUTPUT"
+        elif [ "$RUNNER_OS" = "Windows" ]; then
+          echo "opencv-dir=$OPENCV_DIR_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "runtime-dir=$OPENCV_RUNTIME_OUTPUT" >> "$GITHUB_OUTPUT"
+        else
+          echo "opencv-dir=$RUNNER_TEMP/opencv-install/lib/cmake/opencv4" >> "$GITHUB_OUTPUT"
+          echo "runtime-dir=$RUNNER_TEMP/opencv-install/lib" >> "$GITHUB_OUTPUT"
+        fi

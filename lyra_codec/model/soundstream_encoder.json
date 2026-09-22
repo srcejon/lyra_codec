@@ -1,0 +1,159 @@
+{
+  "input": {
+    "name": "lyra_input",
+    "shape": [
+      1,
+      320
+    ]
+  },
+  "output": {
+    "name": "lyra_output",
+    "shape": [
+      1,
+      1,
+      64
+    ]
+  },
+  "states": [
+    {
+      "input": "lyra_state_00_input",
+      "output": "lyra_state_00_output",
+      "shape": [
+        1,
+        2,
+        1,
+        64
+      ]
+    },
+    {
+      "input": "lyra_state_01_input",
+      "output": "lyra_state_01_output",
+      "shape": [
+        1,
+        6,
+        1,
+        64
+      ]
+    },
+    {
+      "input": "lyra_state_02_input",
+      "output": "lyra_state_02_output",
+      "shape": [
+        1,
+        18,
+        1,
+        64
+      ]
+    },
+    {
+      "input": "lyra_state_03_input",
+      "output": "lyra_state_03_output",
+      "shape": [
+        1,
+        5,
+        1,
+        64
+      ]
+    },
+    {
+      "input": "lyra_state_04_input",
+      "output": "lyra_state_04_output",
+      "shape": [
+        1,
+        2,
+        1,
+        128
+      ]
+    },
+    {
+      "input": "lyra_state_05_input",
+      "output": "lyra_state_05_output",
+      "shape": [
+        1,
+        6,
+        1,
+        128
+      ]
+    },
+    {
+      "input": "lyra_state_06_input",
+      "output": "lyra_state_06_output",
+      "shape": [
+        1,
+        18,
+        1,
+        128
+      ]
+    },
+    {
+      "input": "lyra_state_07_input",
+      "output": "lyra_state_07_output",
+      "shape": [
+        1,
+        2,
+        1,
+        128
+      ]
+    },
+    {
+      "input": "lyra_state_08_input",
+      "output": "lyra_state_08_output",
+      "shape": [
+        1,
+        2,
+        1,
+        256
+      ]
+    },
+    {
+      "input": "lyra_state_09_input",
+      "output": "lyra_state_09_output",
+      "shape": [
+        1,
+        48,
+        1,
+        1
+      ]
+    },
+    {
+      "input": "lyra_state_10_input",
+      "output": "lyra_state_10_output",
+      "shape": [
+        1,
+        2,
+        1,
+        512
+      ]
+    },
+    {
+      "input": "lyra_state_11_input",
+      "output": "lyra_state_11_output",
+      "shape": [
+        1,
+        6,
+        1,
+        256
+      ]
+    },
+    {
+      "input": "lyra_state_12_input",
+      "output": "lyra_state_12_output",
+      "shape": [
+        1,
+        18,
+        1,
+        256
+      ]
+    },
+    {
+      "input": "lyra_state_13_input",
+      "output": "lyra_state_13_output",
+      "shape": [
+        1,
+        2,
+        1,
+        256
+      ]
+    }
+  ]
+}

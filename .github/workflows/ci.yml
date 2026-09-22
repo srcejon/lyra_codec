@@ -1,83 +1,99 @@
-name: build
+name: CMake CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  android-example:
-    runs-on: ubuntu-latest
+  desktop:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-24.04
+          - name: macOS arm64
+            os: macos-15
+          - name: Windows x64
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-      - name: Setup Lyra dependencies
-        uses: ./.github/actions/setup-lyra-deps
-      - name: Build Android App
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up OpenCV 4.14
+        id: opencv
+        uses: ./.github/actions/setup-opencv
+
+      - name: Configure
+        if: runner.os != 'Windows'
         shell: bash
         run: |
-          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/21.4.7075529"
-          bazelisk build lyra/android_example:lyra_android_example --config=android_arm64 --copt=-DBENCHMARK
-      - name: Copy artifacts
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" \
+            -DLYRA_CODEC_BUILD_TESTS=ON \
+            -DLYRA_CODEC_BUILD_TOOLS=ON
+
+      - name: Configure
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" `
+            -DLYRA_CODEC_BUILD_TESTS=ON `
+            -DLYRA_CODEC_BUILD_TOOLS=ON
+
+      - name: Build and test
+        if: runner.os != 'Windows'
         shell: bash
         run: |
-          mkdir action-product
-          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example.apk
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: lyra-android-example
-          path: action-product
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
 
-  android-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-      - name: Setup Lyra dependencies
-        uses: ./.github/actions/setup-lyra-deps
-      - name: Build and upload
-        uses: ./.github/actions/lyra-builder
-        with:
-          platform: android
-          architecture: arm64
-          build-options: --config=android_arm64
+      - name: Build and test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+          $env:PATH = "${{ steps.opencv.outputs.runtime-dir }};$env:PATH"
+          ctest --test-dir build -C Release --output-on-failure
 
-  linux-amd64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-      - name: Setup Lyra dependencies
-        uses: ./.github/actions/setup-lyra-deps
-      - name: Build and upload
-        uses: ./.github/actions/lyra-builder
-        with:
-          platform: linux
-          architecture: amd64
+  android:
+    name: Android arm64-v8a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
-  macos-amd64:
-    runs-on: macos-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up OpenCV 4.14 Android SDK
+        id: opencv
+        uses: ./.github/actions/setup-opencv
         with:
-          python-version: 3.9
-      - name: Setup Lyra dependencies
-        uses: ./.github/actions/setup-lyra-deps
-      - name: Build and upload
-        uses: ./.github/actions/lyra-builder
-        with:
-          platform: macos
-          architecture: amd64
+          target: android
+
+      - name: Configure and build
+        shell: bash
+        run: |
+          cmake -S . -B build-android -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-21 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" \
+            -DLYRA_CODEC_BUILD_TESTS=ON \
+            -DLYRA_CODEC_BUILD_TOOLS=OFF
+          cmake --build build-android --parallel 2

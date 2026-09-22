@@ -1,0 +1,9 @@
+# These packages are build-time conversion/validation tools only. None are
+# linked into or needed by the C++ library.
+numpy==1.26.4
+protobuf==3.20.3
+tensorflow==2.19.0
+tf2onnx==1.16.1
+onnx==1.17.0
+onnxruntime==1.23.0
+opencv-python==4.11.0.86

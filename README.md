@@ -1,354 +1,221 @@
-# Lyra: a generative low bitrate speech codec
+# Lyra Codec: a generative low-bitrate speech codec
 
-## What is Lyra?
+Lyra Codec is a fork of https://github.com/google/lyra
 
-[Lyra](https://ai.googleblog.com/2021/08/soundstream-end-to-end-neural-audio.html)
-is a high-quality, low-bitrate speech codec that makes voice communication
-available even on the slowest networks. To do this it applies traditional codec
-techniques while leveraging advances in machine learning (ML) with models
-trained on thousands of hours of data to create a novel method for compressing
-and transmitting voice signals.
+Lyra is a high-quality, low-bitrate speech codec at 3.2k, 6 and 9.2kbps.
 
-### Overview
+This fork:
+* uses OpenCV 4 with ONNX models instead of TFLite
+* uses CMake instead of Bazel
+* has removed many unnecessary dependencies so it compiles easily on Windows, Mac, Linux and Android.
 
-The basic architecture of the Lyra codec is quite simple. Features are extracted
-from speech every 20ms and are then compressed for transmission at a desired
-bitrate between 3.2kbps and 9.2kbps. On the other end, a generative model uses
-those features to recreate the speech signal.
+### Building the Lyra Codec static library with CMake
 
-Lyra harnesses the power of new natural-sounding generative models to maintain
-the low bitrate of parametric codecs while achieving high quality, on par with
-state-of-the-art waveform codecs used in most streaming and communication
-platforms today.
+The default CMake target is `lyra::codec`. It contains the streaming
+encoder, decoder, packet packing, and a native residual vector quantizer. It
+supports 16 kHz mono PCM in 320-sample (20 ms) frames at 3200, 6000, or 9200
+bit/s. The decoder provides frame-level packet-loss concealment and transitions
+to locally generated comfort noise during longer loss bursts. DTX and
+sample-rate conversion are deliberately outside this small build.
 
-Computational complexity is reduced by using a cheaper convolutional generative
-model called SoundStream, which enables Lyra to not only run on cloud servers,
-but also on-device on low-end phones in real time (with a processing latency of
-20ms). This whole system is then trained end-to-end on thousands of hours of
-speech data with speakers in over 90 languages and optimized to accurately
-recreate the input audio.
+OpenCV 4 with its `core` and `dnn` modules is the only external C++ dependency.
+Point `OpenCV_DIR` at the directory containing `OpenCVConfig.cmake`.
 
-Lyra is supported on Android, Linux, Mac and Windows.
-
-## Prerequisites
-
-There are a few things you'll need to do to set up your computer to build Lyra.
-
-### Common setup
-
-Lyra is built using Google's build system, Bazel. Install it following these
-[instructions](https://docs.bazel.build/versions/master/install.html). Bazel
-verson 5.0.0 is required, and some Linux distributions may make an older version
-available in their application repositories, so make sure you are using the
-required version or newer. The latest version can be downloaded via
-[Github](https://github.com/bazelbuild/bazel/releases).
-
-You will also need python3 and numpy installed.
-
-Lyra can be built from Linux using Bazel for an ARM Android target, or a Linux
-target, as well as Mac and Windows for native targets.
-
-### Android requirements
-
-Building on android requires downloading a specific version of the android NDK
-toolchain. If you develop with Android Studio already, you might not need to do
-these steps if ANDROID_HOME and ANDROID_NDK_HOME are defined and pointing at the
-right version of the NDK.
-
-1.  Download command line tools from https://developer.android.com/studio
-2.  Unzip and cd to the directory
-3.  Check the available packages to install in case they don't match the
-    following steps.
-
-    ```shell
-    bin/sdkmanager  --sdk_root=$HOME/android/sdk --list
-    ```
-
-    Some systems will already have the java runtime set up. But if you see an
-    error here like `ERROR: JAVA_HOME is not set and no 'java' command could be
-    found on your PATH.`, this means you need to install the java runtime with
-    `sudo apt install default-jdk` first. You will also need to add `export
-    JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64` (type `ls /usr/lib/jvm` to see
-    which path was installed) to your $HOME/.bashrc and reload it with `source
-    $HOME/.bashrc`.
-
-4.  Install the r21 ndk, android sdk 30, and build tools:
-
-    ```shell
-    bin/sdkmanager  --sdk_root=$HOME/android/sdk --install  "platforms;android-30" "build-tools;30.0.3" "ndk;21.4.7075529"
-    ```
-
-5.  Add the following to .bashrc (or export the variables)
-
-    ```shell
-    export ANDROID_NDK_HOME=$HOME/android/sdk/ndk/21.4.7075529
-    export ANDROID_HOME=$HOME/android/sdk
-    ```
-
-6.  Reload .bashrc (with `source $HOME/.bashrc`)
-
-## Building
-
-The building and running process differs slightly depending on the selected
-platform.
-
-### Building for Linux
-
-You can build the cc_binaries with the default config. `encoder_main` is an
-example of a file encoder.
+On Linux and macOS, configure and build a release archive with:
 
 ```shell
-bazel build -c opt lyra/cli_example:encoder_main
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DOpenCV_DIR=/path/to/opencv/lib/cmake/opencv4
+cmake --build build --target lyra_codec --parallel
 ```
 
-You can run `encoder_main` to encode a test .wav file with some speech in it,
-specified by `--input_path`. The `--output_dir` specifies where to write the
-encoded (compressed) representation, and the desired bitrate can be specified
-using the `--bitrate` flag.
+Add `-DLYRA_CODEC_BUILD_TESTS=ON` to build the model-import, quantizer, and
+end-to-end codec tests. On Windows, those test executables also need the OpenCV
+`x64/vc17/bin` directory on `PATH`. The supplied OpenCV package has release
+libraries, so configure this build with `CMAKE_BUILD_TYPE=Release`.
+
+On Windows, run these commands from a Visual Studio developer prompt:
+
+```powershell
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+  -DOpenCV_DIR=C:/Users/jon/source/repos/sdrangel-windows-libraries/opencv4
+cmake --build build --target lyra_codec --parallel
+```
+
+The result is `build/lyra_codec/liblyra_codec.a` on Linux, macOS, and Android,
+or `build/lyra_codec/lyra_codec.lib` with Ninja on Windows. Applications must
+package the three files in `lyra_codec/model` and pass that directory to
+`lyra::Encoder::Create` and `lyra::Decoder::Create`.
+
+For Android, configure with the toolchain supplied by the NDK. For example, an
+arm64 build targeting Android API 21 is:
 
 ```shell
-bazel-bin/lyra/cli_example/encoder_main --input_path=lyra/testdata/sample1_16kHz.wav --output_dir=$HOME/temp --bitrate=3200
+cmake -S . -B build-android -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-21 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DOpenCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni
+cmake --build build-android --target lyra_codec --parallel
 ```
 
-Similarly, you can build decoder_main and use it on the output of encoder_main
-to decode the encoded data back into speech.
+Other supported NDK ABIs can be selected with `ANDROID_ABI`. Each ABI needs its
+own build directory. The Windows OpenCV installation shown above contains x64
+Windows libraries and cannot be linked into an Android build; use an OpenCV 4
+Android SDK or an Android build of OpenCV.
 
-```shell
-bazel build -c opt lyra/cli_example:decoder_main
-bazel-bin/lyra/cli_example/decoder_main --encoded_path=$HOME/temp/sample1_16kHz.lyra --output_dir=$HOME/temp/ --bitrate=3200
+To consume Lyra in another CMake project, add this repository and link the
+namespaced target:
+
+```cmake
+set(LYRA_CODEC_BUILD_TESTS OFF)
+add_subdirectory(path/to/lyra)
+target_link_libraries(my_target PRIVATE lyra::codec)
 ```
 
-Note: the default Bazel toolchain is automatically configured and likely uses
-gcc/libstdc++ on Linux. This should be satisfactory for most users, but will
-differ from the NDK toolchain, which uses clang/libc++. To use a custom clang
-toolchain on Linux, see toolchain/README.md and .bazelrc.
+For an installed copy, use the exported `LyraCodec` package:
 
-### Building for Android
-
-#### Android App
-
-There is an example APK target called `lyra_android_example` that you can build
-after you have set up the NDK.
-
-This example is an app with a minimal GUI that has buttons for two options. One
-option is to record from the microphone and encode/decode with Lyra so you can
-test what Lyra would sound like for your voice. The other option runs a
-benchmark that encodes and decodes in the background and prints the timings to
-logcat.
-
-```shell
-bazel build -c opt lyra/android_example:lyra_android_example --config=android_arm64 --copt=-DBENCHMARK
-adb install bazel-bin/lyra/android_example/lyra_android_example.apk
+```cmake
+find_package(LyraCodec CONFIG REQUIRED)
+target_link_libraries(my_target PRIVATE lyra::codec)
 ```
 
-After this you should see an app called "Lyra Example App".
+`LyraCodec_MODEL_DIR` contains the installed model directory after
+`find_package` succeeds.
 
-You can open it, and you will see a simple TextView that says the benchmark is
-running, and when it finishes.
+The public API is in `lyra_codec/lyra_codec.h`.
 
-Press "Record from microphone", say a few words, and then press "Encode and
-decode to speaker". You should hear your voice being played back after being
-coded with Lyra.
-
-If you press 'Benchmark', you should see something like the following in logcat
-on a Pixel 6 Pro when running the benchmark:
-
-```shell
-lyra_benchmark:  feature_extractor:  max: 1.836 ms  min: 0.132 ms  mean: 0.153 ms  stdev: 0.042 ms
-lyra_benchmark: quantizer_quantize:  max: 1.042 ms  min: 0.120 ms  mean: 0.130 ms  stdev: 0.028 ms
-lyra_benchmark:   quantizer_decode:  max: 0.103 ms  min: 0.026 ms  mean: 0.029 ms  stdev: 0.003 ms
-lyra_benchmark:       model_decode:  max: 0.820 ms  min: 0.191 ms  mean: 0.212 ms  stdev: 0.031 ms
-lyra_benchmark:              total:  max: 2.536 ms  min: 0.471 ms  mean: 0.525 ms  stdev: 0.088 ms
-```
-
-This shows that decoding a 50Hz frame (each frame is 20 milliseconds) takes
-0.525 milliseconds on average. So decoding is performed at around 38 (20/0.525)
-times faster than realtime.
-
-To build your own android app, you can either use the cc_library target outputs
-to create a .so that you can use in your own build system. Or you can use it
-with an
-[`android_binary`](https://docs.bazel.build/versions/master/be/android.html)
-rule within bazel to create an .apk file as in this example.
-
-There is a tutorial on building for android with Bazel in the
-[bazel docs](https://docs.bazel.build/versions/master/android-ndk.html).
-
-#### Android command-line binaries
-
-There are also the binary targets that you can use to experiment with encoding
-and decoding .wav files.
-
-You can build the example cc_binary targets with:
-
-```shell
-bazel build -c opt lyra/cli_example:encoder_main --config=android_arm64
-bazel build -c opt lyra/cli_example:decoder_main --config=android_arm64
-```
-
-This builds an executable binary that can be run on android 64-bit arm devices
-(not an android app). You can then push it to your android device and run it as
-a binary through the shell.
-
-```shell
-# Push the binary and the data it needs, including the model and .wav files:
-adb push bazel-bin/lyra/cli_example/encoder_main /data/local/tmp/
-adb push bazel-bin/lyra/cli_example/decoder_main /data/local/tmp/
-adb push lyra/model_coeffs/ /data/local/tmp/
-adb push lyra/testdata/ /data/local/tmp/
-
-adb shell
-cd /data/local/tmp
-./encoder_main --model_path=/data/local/tmp/model_coeffs --output_dir=/data/local/tmp --input_path=testdata/sample1_16kHz.wav
-./decoder_main --model_path=/data/local/tmp/model_coeffs --output_dir=/data/local/tmp --encoded_path=sample1_16kHz.lyra
-```
-
-The encoder_main/decoder_main as above should also work.
-
-### Building for Mac
-
-You will need to install the XCode command line tools in addition to the
-prerequisites common to all platforms. XCode setup is a required step for using
-Bazel on Mac. See this [guide](https://bazel.build/install/os-x) for how to
-install XCode command line tools. Lyra has been built successfully using XCode
-13.3.
-
-You can follow the instructions in the [Building for Linux](#building-for-linux)
-section once this is completed.
-
-### Building for Windows
-
-You will need to install Build Tools for Visual Studio 2019 in addition to the
-prerequisites common to all platforms. Visual Studio setup is a required step
-for building C++ for Bazel on Windows. See this
-[guide](https://bazel.build/install/windows) for how to install MSVC. You may
-also need to install python 3 support, which is also described in the guide.
-
-You can follow the instructions in the [Building for Linux](#building-for-linux)
-section once this is completed.
-
-## API
-
-For integrating Lyra into any project only two APIs are relevant:
-[LyraEncoder](lyra/lyra_encoder.h) and [LyraDecoder](lyra/lyra_decoder.h).
-
-> DISCLAIMER: At this time Lyra's API and bit-stream are **not** guaranteed to
-> be stable and might change in future versions of the code.
-
-On the sending side, `LyraEncoder` can be used to encode an audio stream using
-the following interface:
+A frame-level encode/decode loop looks like this (error handling abbreviated):
 
 ```cpp
-class LyraEncoder : public LyraEncoderInterface {
- public:
-  static std::unique_ptr<LyraEncoder> Create(
-      int sample_rate_hz, int num_channels, int bitrate, bool enable_dtx,
-      const ghc::filesystem::path& model_path);
+#include "lyra_codec/lyra_codec.h"
 
-  std::optional<std::vector<uint8_t>> Encode(
-      const absl::Span<const int16_t> audio) override;
+std::string error;
+auto encoder = lyra::Encoder::Create(
+    model_directory, 3200, &error);
+auto decoder = lyra::Decoder::Create(
+    model_directory, &error);
 
-  bool set_bitrate(int bitrate) override;
+std::vector<std::uint8_t> packet;
+encoder->Encode(pcm_16khz_mono.data(), 320, &packet, &error);
 
-  int sample_rate_hz() const override;
+std::vector<std::int16_t> decoded;
+decoder->Decode(packet.data(), packet.size(), &decoded, &error);
 
-  int num_channels() const override;
+// Advance the decoder by one 20 ms frame when a packet is missing.
+decoder->DecodeLostFrame(&decoded, &error);
 
-  int bitrate() const override;
-
-  int frame_rate() const override;
-};
+if (decoder->is_comfort_noise()) {
+  // The loss burst has moved beyond neural concealment.
+}
 ```
 
-The static `Create` method instantiates a `LyraEncoder` with the desired sample
-rate in Hertz, number of channels and bitrate, as long as those parameters are
-supported (see `lyra_encoder.h` for supported parameters). Otherwise it returns
-a nullptr. The `Create` method also needs to know if DTX should be enabled and
-where the model weights are stored. It also checks that these weights exist and
-are compatible with the current Lyra version.
+To rebuild the checked-in ONNX and native quantizer assets, install the Python
+packages in `tools/requirements-onnx.txt`, then run:
 
-Given a `LyraEncoder`, any audio stream can be compressed using the `Encode`
-method. The provided span of int16-formatted samples is assumed to contain 20ms
-of data at the sample rate chosen at `Create` time. As long as this condition is
-met the `Encode` method returns the encoded packet as a vector of bytes that is
-ready to be stored or transmitted over the network.
-
-The bitrate can be dynamically modified using the `set_bitrate` setter. It
-returns true if the desired bitrate is supported and correctly set.
-
-The rest of the `LyraEncoder` methods are just getters for the different
-predetermined parameters.
-
-On the receiving end, `LyraDecoder` can be used to decode the encoded packet
-using the following interface:
-
-```cpp
-class LyraDecoder : public LyraDecoderInterface {
- public:
-  static std::unique_ptr<LyraDecoder> Create(
-      int sample_rate_hz, int num_channels,
-      const ghc::filesystem::path& model_path);
-
-  bool SetEncodedPacket(absl::Span<const uint8_t> encoded) override;
-
-  std::optional<std::vector<int16_t>> DecodeSamples(int num_samples) override;
-
-  int sample_rate_hz() const override;
-
-  int num_channels() const override;
-
-  int frame_rate() const override;
-
-  bool is_comfort_noise() const override;
-};
+```shell
+python tools/convert_streaming_tflite_to_onnx.py \
+  tools/source_models/soundstream_encoder.tflite \
+  lyra_codec/model/soundstream_encoder.onnx
+python tools/convert_streaming_tflite_to_onnx.py \
+  tools/source_models/lyragan.tflite lyra_codec/model/lyragan.onnx
+python tools/extract_quantizer_codebook.py \
+  tools/source_models/quantizer.tflite \
+  lyra_codec/model/quantizer_codebook.bin
 ```
 
-Once again, the static `Create` method instantiates a `LyraDecoder` with the
-desired sample rate in Hertz and number of channels, as long as those parameters
-are supported. Else it returns a `nullptr`. These parameters don't need to be
-the same as the ones in `LyraEncoder`. And once again, the `Create` method also
-needs to know where the model weights are stored. It also checks that these
-weights exist and are compatible with the current Lyra version.
+The conversion tools use TensorFlow, tf2onnx, ONNX, and Protobuf only while
+regenerating assets; end users do not need them. The converter exports float
+ONNX graphs by default. OpenCV 4.13 and 4.14 corrupt several recurrent outputs
+in the Q/DQ form even though ONNX Runtime executes that form correctly. The
+`--keep-quantized` option is retained for backend investigation, not for the
+OpenCV runtime.
 
-Given a `LyraDecoder`, any packet can be decoded by first feeding it into
-`SetEncodedPacket`, which returns true if the provided span of bytes is a valid
-Lyra-encoded packet.
+### WAV tools and benchmark
 
-Then the int16-formatted samples can be obtained by calling `DecodeSamples`. If
-there isn't a packet available, but samples still need to be generated, the
-decoder might switch to a comfort noise generation mode, which can be checked
-using `is_comfort_noise`.
+Set `LYRA_CODEC_BUILD_TOOLS=ON` to build three dependency-free command-line front
+ends. The option defaults to `OFF`. The tools accept only 16-bit, 16 kHz, mono
+WAV files:
 
-The rest of the `LyraDecoder` methods are just getters for the different
-predetermined parameters.
+```shell
+lyra_encode input.wav output.lyra /path/to/lyra_codec/model 3200
+lyra_decode output.lyra decoded.wav /path/to/lyra_codec/model 3200
+lyra_benchmark /path/to/lyra_codec/model 3200 1000
+```
 
-For an example on how to use `LyraEncoder` and `LyraDecoder` to encode and
-decode a stream of audio, please refer to the
-[integration test](lyra/lyra_integration_test.cc).
+For listening tests, the decoder tool can simulate a contiguous loss burst by
+adding its zero-based start frame and frame count. This example conceals 500 ms
+beginning one second into the stream:
+
+```shell
+lyra_decode input.lyra loss.wav /path/to/lyra_codec/model 3200 50 25
+```
+
+The `.lyra` output is a raw, fixed-size packet stream. Detailed
+TFLite/ONNX/OpenCV compatibility and audio-quality results are
+recorded in `lyra_codec/validation`. The float ONNX graphs pass the current
+OpenCV 4.13 and 4.14 CPU quality gate: their worst SI-SDR regression against
+TFLite is 0.31 dB with a 2 dB limit.
+
+### Continuous integration and releases
+
+GitHub Actions builds and tests the desktop library on Windows, macOS, and
+Linux, and compile/link-checks the tests for Android arm64 (they cannot run on
+the hosted Linux runner). CI uses OpenCV 4.14.0 on all platforms. The workflow
+also builds the optional command-line tools so their sources cannot silently
+become stale; they remain disabled by default for normal library builds and
+release packages.
+
+Pushing a tag whose name starts with `v` (for example, `v1.3.2`) creates a
+GitHub release with install-tree ZIPs for Linux x64, Windows x64, macOS x64,
+macOS arm64, Android arm64-v8a, and Android x86_64. Running the Release workflow
+manually builds the same ZIPs as workflow artifacts without publishing a
+release. Release archives contain the library, public header, model data,
+CMake package files, README, and license. Each published release also includes
+SHA-256 checksums. OpenCV remains a separate dependency.
+
+#### Creating a release
+
+1. Update the version in the top-level `CMakeLists.txt`, for example:
+
+   ```cmake
+   project(lyra_codec VERSION 1.3.3 LANGUAGES CXX)
+   ```
+
+2. Commit the release changes, push the commit, and wait for the CMake CI
+   workflow to pass:
+
+   ```shell
+   git add CMakeLists.txt README.md
+   git commit -m "Prepare release 1.3.3"
+   git push origin HEAD
+   ```
+
+3. Create an annotated tag whose version matches the CMake project version,
+   then push it:
+
+   ```shell
+   git tag -a v1.3.3 -m "Lyra 1.3.3"
+   git push origin v1.3.3
+   ```
+
+The tag push starts the Release workflow. It rebuilds and validates every
+package before creating the GitHub release, so no release is published if a
+platform fails. Treat published tags as immutable; make corrections with a new
+version rather than moving an existing tag.
+
+For a pre-release check, run the Release workflow manually from the repository's
+Actions page. A manual run creates downloadable workflow artifacts for every
+platform but does not create a GitHub release. After a tagged release, download
+the archives and `SHA256SUMS` from its GitHub release page and verify a package
+with:
+
+```shell
+sha256sum -c SHA256SUMS
+```
 
 ## License
 
 Use of this source code is governed by a Apache v2.0 license that can be found
 in the LICENSE file.
-
-## Papers
-
-1.  Kleijn, W. B., Lim, F. S., Luebs, A., Skoglund, J., Stimberg, F., Wang, Q.,
-    & Walters, T. C. (2018, April).
-    [Wavenet based low rate speech coding](https://arxiv.org/pdf/1712.01120). In
-    2018 IEEE international conference on acoustics, speech and signal
-    processing (ICASSP) (pp. 676-680). IEEE.
-2.  Denton, T., Luebs, A., Chinen, M., Lim, F. S., Storus, A., Yeh, H., Kleijn,
-    W. B., & Skoglund, J. (2020, November).
-    [Handling Background Noise in Neural Speech Generation](https://arxiv.org/pdf/2102.11906).
-    In 2020 54th Asilomar Conference on Signals, Systems, and Computers (pp.
-    667-671). IEEE.
-3.  Kleijn, W. B., Storus, A., Chinen, M., Denton, T., Lim, F. S., Luebs, A.,
-    Skoglund, J., & Yeh, H. (2021, June).
-    [Generative speech coding with predictive variance regularization](https://arxiv.org/pdf/2102.09660).
-    In ICASSP 2021-2021 IEEE International Conference on Acoustics, Speech and
-    Signal Processing (ICASSP) (pp. 6478-6482). IEEE.
-4.  Zeghidour, N., Luebs, A., Omran, A., Skoglund, J., & Tagliasacchi, M.
-    (2021).
-    [SoundStream: An end-to-end neural audio codec](https://arxiv.org/pdf/2107.03312).
-    IEEE/ACM Transactions on Audio, Speech, and Language Processing.
