@@ -111,6 +111,33 @@ if (decoder->is_comfort_noise()) {
 }
 ```
 
+### Optional dynamically loaded runtime
+
+Applications that must continue running when OpenCV is not installed can build
+the optional shared runtime:
+
+```shell
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DOpenCV_DIR=/path/to/opencv/lib/cmake/opencv4 \
+  -DLYRA_CODEC_BUILD_RUNTIME=ON
+cmake --build build --target lyra_codec_runtime
+```
+
+The CMake target is `lyra::runtime`; its file is `lyracodec.dll` on Windows,
+`liblyracodec.so` on Linux, or `liblyracodec.dylib` on macOS. Its stable C ABI
+is declared in `lyra_codec/c_api.h`. The runtime contains the Lyra encoder and
+decoder but uses the normal shared-library dependency mechanism for OpenCV.
+A host can load it with `LoadLibrary`, `dlopen`, or a framework such as Qt's
+`QLibrary`. If OpenCV or one of its transitive libraries is unavailable, only
+loading `lyracodec` fails; the host remains usable.
+
+This is intentionally different from resolving OpenCV's API manually. OpenCV
+DNN has a C++ interface, so directly loading its version-specific C++ symbols
+would be brittle. The runtime library is the portable isolation boundary.
+`LYRA_CODEC_RUNTIME_MODEL_DIR` can override the model directory reported by
+`lyracodec_built_model_directory()`; callers can always pass another directory
+when creating an encoder or decoder.
+
 To rebuild the checked-in ONNX and native quantizer assets, install the Python
 packages in `tools/requirements-onnx.txt`, then run:
 
@@ -160,7 +187,8 @@ TFLite is 0.31 dB with a 2 dB limit.
 
 ### Continuous integration and releases
 
-GitHub Actions builds and tests the desktop library on Windows, macOS, and
+GitHub Actions builds and tests the desktop static library and dynamically
+loadable runtime on Windows, macOS, and
 Linux, and compile/link-checks the tests for Android arm64 (they cannot run on
 the hosted Linux runner). CI uses OpenCV 4.14.0 on all platforms. The workflow
 also builds the optional command-line tools so their sources cannot silently
@@ -170,7 +198,7 @@ release packages.
 Each successful CI job uploads its install tree as a downloadable GitHub
 Actions artifact, which GitHub delivers as a ZIP file. CI artifacts are retained
 for 14 days and are named for their target platform. Desktop CI artifacts
-include the optional command-line tools; the Android artifact contains the
+include the optional command-line tools and `lyracodec` runtime; the Android artifact contains the
 static library, header, models, CMake package files, README, and license.
 
 Pushing a tag whose name starts with `v` (for example, `v1.3.2`) creates a

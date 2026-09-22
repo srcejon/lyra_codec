@@ -33,6 +33,27 @@ set_target_properties(lyra_codec PROPERTIES
   CXX_EXTENSIONS OFF
   DEBUG_POSTFIX d)
 
+if(LYRA_CODEC_BUILD_RUNTIME)
+  add_library(lyra_codec_runtime SHARED c_api.cc c_api.h)
+  add_library(lyra::runtime ALIAS lyra_codec_runtime)
+  target_include_directories(lyra_codec_runtime PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+  target_compile_features(lyra_codec_runtime PUBLIC cxx_std_17)
+  target_compile_definitions(lyra_codec_runtime PRIVATE
+    LYRA_CODEC_RUNTIME_BUILD
+    LYRA_CODEC_VERSION="${PROJECT_VERSION}"
+    LYRA_CODEC_RUNTIME_MODEL_DIR="${LYRA_CODEC_RUNTIME_MODEL_DIR}")
+  target_link_libraries(lyra_codec_runtime PRIVATE lyra_codec)
+  set_target_properties(lyra_codec_runtime PROPERTIES
+    OUTPUT_NAME lyracodec
+    EXPORT_NAME runtime
+    CXX_EXTENSIONS OFF
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+    DEBUG_POSTFIX d)
+endif()
+
 if(LYRA_CODEC_BUILD_TESTS)
   add_executable(lyra_codec_quantizer_test native_quantizer_test.cc)
   target_link_libraries(lyra_codec_quantizer_test PRIVATE lyra_codec)
@@ -58,6 +79,19 @@ if(LYRA_CODEC_BUILD_TESTS)
   target_link_libraries(lyra_codec_packet_loss_test PRIVATE lyra_codec)
   add_test(NAME lyra_codec_packet_loss_test
     COMMAND lyra_codec_packet_loss_test "${PROJECT_SOURCE_DIR}/lyra_codec/model")
+
+  if(LYRA_CODEC_BUILD_RUNTIME)
+    add_executable(lyra_codec_c_api_test c_api_test.cc)
+    target_link_libraries(lyra_codec_c_api_test PRIVATE lyra_codec_runtime)
+    add_test(NAME lyra_codec_c_api_test
+      COMMAND lyra_codec_c_api_test "${PROJECT_SOURCE_DIR}/lyra_codec/model")
+
+    add_executable(lyra_codec_runtime_load_test runtime_load_test.cc)
+    target_compile_features(lyra_codec_runtime_load_test PRIVATE cxx_std_17)
+    target_link_libraries(lyra_codec_runtime_load_test PRIVATE ${CMAKE_DL_LIBS})
+    add_test(NAME lyra_codec_runtime_load_test
+      COMMAND lyra_codec_runtime_load_test $<TARGET_FILE:lyra_codec_runtime>)
+  endif()
 endif()
 
 if(LYRA_CODEC_BUILD_TOOLS)
@@ -81,7 +115,13 @@ endif()
 
 install(TARGETS lyra_codec EXPORT LyraCodecTargets
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES lyra_codec.h
+if(LYRA_CODEC_BUILD_RUNTIME)
+  install(TARGETS lyra_codec_runtime EXPORT LyraCodecTargets
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+endif()
+install(FILES lyra_codec.h c_api.h
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/lyra_codec")
 install(FILES
   model/soundstream_encoder.onnx

@@ -47,6 +47,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" \
             -DLYRA_CODEC_BUILD_TESTS=ON \
+            -DLYRA_CODEC_BUILD_RUNTIME=ON \
             -DLYRA_CODEC_BUILD_TOOLS=ON
 
       - name: Configure
@@ -56,6 +57,7 @@ jobs:
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
             -DOpenCV_DIR="${{ steps.opencv.outputs.opencv-dir }}" `
             -DLYRA_CODEC_BUILD_TESTS=ON `
+            -DLYRA_CODEC_BUILD_RUNTIME=ON `
             -DLYRA_CODEC_BUILD_TOOLS=ON
 
       - name: Build and test
