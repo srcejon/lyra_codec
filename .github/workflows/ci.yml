@@ -60,6 +60,8 @@ jobs:
         shell: bash
         run: |
           cmake --build build --parallel 2
+          export LD_LIBRARY_PATH="${{ steps.opencv.outputs.runtime-dir }}:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="${{ steps.opencv.outputs.runtime-dir }}:${DYLD_LIBRARY_PATH:-}"
           ctest --test-dir build --output-on-failure
 
       - name: Build and test
